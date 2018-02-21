@@ -1,43 +1,49 @@
-//loading monogoose
-var mongoose= require('mongoose');
-//inorder to use promise in our callback functions we need to configure
-mongoose.Promise = global.Promise;
-//the connection string to the db
-mongoose.connect('mongodb://localhost:27017/TodoApp');
+/*Lib Imports*/
+var express=require('express');
+var bodyParser=require('body-parser');
 
-//creating a model .model helps in keeping the collections more organised
-/*this basically defines the What collection shuld contain(col) along with col defination(like what kind of col shuld accept input as)*/
-var Todo=mongoose.model('Todo',{
-  text:{
-    type:String
-  },
-  completed:{
-    type:Boolean
-  },
-  completedAt:{
-    type:Number
-  }
+/*Local imports*/
+//including the connection string in the files
+var {mongoose} =require ('./db/mongoose');
+/*including custome files*/
+var {Todo}=require('./models/todo');
+var {User}=require('./models/user');
+
+//intialising var that is going to store app
+var app = express();
+
+//intialising middleware->using middleware from body-parser
+app.use(bodyParser.json());
+/*********************************************************/
+//setting up route with post
+app.post('/todos',(req,res)=>{
+  //console.log(req.body);
+  /*saving the input in the DB*/
+  var todo= new Todo(
+    {
+      text:req.body.text
+    });
+  todo.save().then(
+    (doc)=>{ res.send(doc);},
+    (e)=>{ res.status(400).send(e);}
+  );
 });
-/*
-//creating the instance of above model:Todo
-var newTodo=new Todo({
-  text:'Cook dinner'
+/************************************************************/
+//route to fetch todos if present in DB using GET
+app.get('/todos',(req,res)=>{
+  //fetching whole data from DB
+  Todo.find().then(
+    (todos)=>{ res.send({todos});
+  },(e)=>{
+    res.status(400).send(e);
+  });
 });
-//the above instance with data need to saved
-//below we are saving instance if not saved than pop an error
-newTodo.save().then(
-  (doc)=>{ console.log('Saved todo',doc)},
-  (e)=>{console.log('Unable to save todo')}
-);
-*/
-/*challenge*/
-var secondTodo=new Todo({
-  text:'finish section 7 today',
-  completed:0,
-  completedAt:2002
+/************************************************************/
+//inorder to run the app on Local it has listen by server at some port
+app.listen(3000,()=>{
+  console.log('Started on Port 3000.');
 });
 
-secondTodo.save().then(
-  (doc)=>{ console.log('saved todo',doc);},
-  (e)=>{ console.log('Unable to save todo',e); }
-);
+
+/*exporting the app varible*/
+module.exports={app};

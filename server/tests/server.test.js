@@ -1,7 +1,7 @@
 /*requiring the expect & supertest*/
 const expect=require('expect');
 const request=require('supertest');
-
+const {ObjectID}=require('mongodb');
 /*require some local files that is used for testing*/
 const {app}=require('./../server');
 const {Todo}=require('./../models/todo');
@@ -9,8 +9,10 @@ const {Todo}=require('./../models/todo');
 /*adding the data that is required to fetch from in some test suites*/
 const todos=[
   {
+    _id:new ObjectID(),
     text:'First test todo'
   },{
+    _id:new ObjectID(),
     text:'Second test todo'
   }
 ];
@@ -25,6 +27,7 @@ beforeEach((done)=>{
 );
 });
 /*describe() ->allows to group the multiple routes*/
+/*********************************************************************************************************************/
 //describe block for Todos
 describe(('POST /todos'),()=>{
   //starting the test case
@@ -75,7 +78,7 @@ describe(('POST /todos'),()=>{
           });
   });
 });
-
+/*********************************************************************************************************************/
 //test suites for GET
 describe('GET /todos',()=>{
   //test case
@@ -90,4 +93,36 @@ describe('GET /todos',()=>{
       )
       .end(done);
   });
+});
+/*********************************************************************************************************************/
+//test suites for for GET/todos/id
+describe('GET /todos/:id',()=>{
+  //test case
+  it('should return todo doc',(done)=>{
+    request(app)
+      .get(`/todos/${todos[0]._id.toHexString()}`)
+      .expect(200)
+      .expect(
+        (res)=>{
+          expect(res.body.todo.text).toBe(todos[0].text);
+        }
+      )
+      .end(done);
+  });
+
+  it('should return 404 if todo not found',(done)=>{
+      var hexId=new ObjectID().toHexString();
+      request(app)
+        .get(`/todos/${hexId}`)
+        .expect(404)
+        .end(done);
+  });
+  it('should return 404 for non-object ids',(done)=>{
+    request(app)
+      .get('/todos/123acb')
+      .expect(404)
+      .end(done);
+  });
+
+
 });

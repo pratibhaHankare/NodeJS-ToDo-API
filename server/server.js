@@ -10,7 +10,7 @@ const {ObjectID}=require('mongodb');
 var {mongoose} =require ('./db/mongoose');
 /*including custome files*/
 var {Todo}=require('./models/todo');
-var {User}=require('./models/user');
+var {Users}=require('./models/user');
 
 //intialising var that is going to store app
 var app = express();
@@ -125,6 +125,21 @@ app.patch('/todos/:id',(req,res)=>{
     res.status(400).send();
   })
 });
+/************************************************************/
+//route for user login
+app.post('/users',(req,res)=>{
+  var users=_.pick(req.body,['email','password']);
+  //creating a instance of user
+  var users=new Users(users);
+
+  users.save().then(
+    (users)=>{ res.send(users); }
+  ).catch(
+    (e)=>{ res.status(400).send(e); }
+  )
+
+});
+
 /************************************************************/
 //inorder to run the app on Local it has listen by server at some port
 app.listen(port,()=>{

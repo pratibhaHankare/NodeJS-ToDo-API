@@ -10,7 +10,8 @@ const {ObjectID}=require('mongodb');
 var {mongoose} =require ('./db/mongoose');
 /*including custome files*/
 var {Todo}=require('./models/todo');
-var {Users}=require('./models/user');
+var {User}=require('./models/user');
+var {authenticate}=require('./middleware/authenticate');
 
 //intialising var that is going to store app
 var app = express();
@@ -127,20 +128,60 @@ app.patch('/todos/:id',(req,res)=>{
 });
 /************************************************************/
 //route for user login
-app.post('/users',(req,res)=>{
-  var users=_.pick(req.body,['email','password']);
-  //creating a instance of user
-  var users=new Users(users);
+// POST /users
+app.post('/users', (req, res) => {
+  var body = _.pick(req.body, ['email', 'password']);
+  var user = new User(body);
 
-  users.save().then(
-    (users)=>{ res.send(users); }
-  ).catch(
-    (e)=>{ res.status(400).send(e); }
-  )
-
+  user.save().then(() => {
+    return user.generateAuthToken();
+  }).then((token) => {
+    res.header('x-auth', token).send(user);
+  }).catch((e) => {
+    res.status(400).send(e);
+  })
+});
+/************************************************************/
+//router for validation the user inorder to see if the user is the same
+app.get('/users/me',authenticate,(req,res)=>{
+  /*passed into middleware
+  var token= req.header('x-auth');
+   User.findByToken(token).then(
+     (user)=>{
+       if(!user){
+///if the user didnt find
+          return Promise.reject();
+       }
+      // console.log(user);
+       res.send(user);
+     }).catch((e)=>{
+       //authentication is required
+     res.status(401).send();
+   });*/
+   res.send(req.user);
+});
+/************************************************************/
+//POST /users/login(email,password)
+app.post('/users/login',(req,res)=>{
+  var body=_.pick(req.body,['email','password']);
+  //  res.send(body);
+  //verify if user email exists & verify (compare) with db <- done at user model
+  /*function call to check if emal & password exisits*/
+  User.findByCredentials(body.email,body.password).then((user)=>{
+    //go and write logic for model
+    //creating the new auth
+    return user.generateAuthToken().then((token)=>{
+      res.header('x-auth',token).send(user);
+    })
+  //  res.send(user);
+  }).catch((e)=>{
+    //console.log(e);
+        res.status(400).send();
+  });
 });
 
 /************************************************************/
+
 //inorder to run the app on Local it has listen by server at some port
 app.listen(port,()=>{
   console.log(`Started on port ${port}`);
